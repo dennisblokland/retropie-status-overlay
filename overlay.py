@@ -3,8 +3,7 @@
 # Requires:
 # - pngview by AndrewFromMelbourne
 # - an entry in crontab
-
-import time
+import sched, time
 import subprocess
 import os
 import re
@@ -17,6 +16,9 @@ from datetime import datetime
 from statistics import median
 from collections import deque
 from enum import Enum
+import EventWrapper
+
+
 
 # Load Configuration
 config = configparser.ConfigParser()
@@ -409,7 +411,9 @@ value_v = None
 battery_history = deque(maxlen=5)
 audio_volume = 0
 
-while True:
+s = sched.scheduler(time.time, time.sleep)
+
+def refresh():
   count = 0
   
   # Check if retroarch is running
@@ -449,5 +453,14 @@ while True:
   my_logger.info(log + str(", throttle: %#0x" % (env)))
   
   ingame = new_ingame
-  time.sleep(5)
-  
+  s.enter(5, 1, refresh)
+
+s.enter(5, 1, refresh)
+
+
+WRAPPER = EventWrapper()
+
+while True:
+  WRAPPER.wait_event()
+  WRAPPER.consume_queue()
+  WRAPPER.clear_event()
